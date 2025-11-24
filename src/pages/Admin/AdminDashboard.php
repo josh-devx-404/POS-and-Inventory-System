@@ -1,436 +1,418 @@
-<?php
-require_once __DIR__ . '/../../config/db.php';
-?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Café POS Dashboard</title>
+    <title>Café Admin Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="../../styles/global.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        
-        * {
-            font-family: 'Inter', sans-serif;
-        }
-        
-        body {
-            transition: background-color 0.3s ease, color 0.3s ease;
-        }
-        
-        .light-mode {
-            background: linear-gradient(135deg, #f5f1e8 0%, #faf8f3 100%);
-            color: #2d2d2d;
-        }
-        
-        .dark-mode {
-            background: linear-gradient(135deg, #1a1412 0%, #2d2520 100%);
-            color: #e8e8e8;
-        }
-        
-        .sidebar {
-            transition: all 0.3s ease;
-        }
-        
-        .light-mode .sidebar {
-            background: linear-gradient(180deg, #3d2817 0%, #5c4033 100%);
-        }
-        
-        .dark-mode .sidebar {
-            background: linear-gradient(180deg, #0f0a08 0%, #1a1412 100%);
-        }
-        
-        .card {
-            transition: all 0.3s ease;
-        }
-        
-        .light-mode .card {
-            background: rgba(255, 255, 255, 0.9);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        }
-        
-        .dark-mode .card {
-            background: rgba(42, 33, 28, 0.6);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-        }
-        
-        .nav-item {
-            transition: all 0.2s ease;
-        }
-        
-        .nav-item:hover {
-            transform: translateX(8px);
-            background: rgba(255, 255, 255, 0.1);
-        }
-        
-        .nav-item.active {
-            background: rgba(255, 255, 255, 0.15);
-            border-left: 4px solid #d4a574;
-        }
-        
-        .toggle-switch {
-            width: 60px;
-            height: 30px;
-            background: #4a4a4a;
-            border-radius: 15px;
-            position: relative;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-        
-        .toggle-switch.active {
-            background: #d4a574;
-        }
-        
-        .toggle-slider {
-            width: 24px;
-            height: 24px;
-            background: white;
-            border-radius: 50%;
-            position: absolute;
-            top: 3px;
-            left: 3px;
-            transition: transform 0.3s;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-        
-        .toggle-switch.active .toggle-slider {
-            transform: translateX(30px);
-        }
-        
-        .stat-card {
-            transition: transform 0.2s ease;
-        }
-        
-        .stat-card:hover {
-            transform: translateY(-5px);
-        }
-        
-        .light-mode .table-row:nth-child(even) {
-            background: rgba(245, 241, 232, 0.3);
-        }
-        
-        .dark-mode .table-row:nth-child(even) {
-            background: rgba(61, 40, 23, 0.2);
-        }
-        
-        .badge {
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-        
-        .badge-success {
-            background: #d4f4dd;
-            color: #2d6a3e;
-        }
-        
-        .dark-mode .badge-success {
-            background: #2d6a3e;
-            color: #d4f4dd;
-        }
-        
-        .badge-pending {
-            background: #fff3cd;
-            color: #856404;
-        }
-        
-        .dark-mode .badge-pending {
-            background: #856404;
-            color: #fff3cd;
-        }
+        * { font-family: 'Inter', sans-serif; }
+        .gradient-bg { background: linear-gradient(135deg, #6A0DAD 0%, #A020F0 100%); }
+        .gradient-text { background: linear-gradient(135deg, #6A0DAD 0%, #A020F0 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .sidebar { transform: translateX(-100%); transition: transform 0.3s ease; }
+        .sidebar.open { transform: translateX(0); }
+        .modal { display: none; opacity: 0; transition: opacity 0.3s ease; }
+        .modal.show { display: flex; opacity: 1; }
+        .counter { transition: all 0.5s ease; }
+        .card-hover { transition: all 0.3s ease; }
+        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
+        body.dark { background-color: #0f172a; color: #e2e8f0; }
+        body.dark .bg-white { background-color: #1e293b; }
+        body.dark .text-gray-900 { color: #e2e8f0; }
+        body.dark .text-gray-600 { color: #94a3b8; }
+        body.dark .text-gray-700 { color: #cbd5e1; }
+        body.dark .border-gray-200 { border-color: #334155; }
+        body.dark .bg-gray-50 { background-color: #0f172a; }
+        body.dark .bg-gray-100 { background-color: #1e293b; }
+        body.dark .shadow { box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.26); }
     </style>
 </head>
-<body class="light-mode">
+<body class="bg-gray-50 transition-colors duration-200">
     
-    <div class="flex min-h-screen">
-        
-        <!-- Sidebar -->
-        <aside class="sidebar w-64 p-6 text-white flex flex-col">
-            
-            <!-- Logo -->
-            <div class="flex items-center gap-3 mb-10">
-                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center">
-                    <svg class="w-6 h-6" fill="white" viewBox="0 0 24 24">
-                        <path d="M12 3C8.5 3 6 5.5 6 9c0 2.5 1.5 4 3 6 1.5 2 2 3 2 5h2c0-2 .5-3 2-5 1.5-2 3-3.5 3-6 0-3.5-2.5-6-6-6zm0 2c.8 0 1.5.3 2 .8.5.5.8 1.2.8 2-.3-.2-.7-.3-1-.3-1.1 0-2 .9-2 2s.9 2 2 2c.3 0 .7-.1 1-.3-.3 1.5-1.5 2.8-2.8 2.8S9.3 11 9 9.5c-.3.2-.7.3-1 .3-1.1 0-2-.9-2-2s.9-2 2-2c.3 0 .7.1 1 .3C9 4.8 10.3 3.5 12 3.5z"/>
+    <!-- Sidebar Overlay -->
+    <div id="sidebarOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden"></div>
+    
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar fixed top-0 left-0 h-full w-64 bg-white shadow-xl z-50 overflow-y-auto">
+        <div class="p-6 gradient-bg">
+            <h2 class="text-2xl font-bold text-white">☕ Café Admin</h2>
+        </div>
+        <nav class="p-4 space-y-2">
+            <a href="#" class="flex items-center space-x-3 px-4 py-3 rounded-xl bg-gradient-to-r from-[#6A0DAD] to-[#A020F0] text-white">
+                <span>📊</span><span class="font-medium">Dashboard</span>
+            </a>
+            <a href="#" class="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gray-100 text-gray-700 transition">
+                <span>🍰</span><span class="font-medium">Products</span>
+            </a>
+            <a href="#" class="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gray-100 text-gray-700 transition">
+                <span>📦</span><span class="font-medium">Inventory</span>
+            </a>
+            <a href="#" class="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gray-100 text-gray-700 transition">
+                <span>🏷️</span><span class="font-medium">Categories</span>
+            </a>
+            <a href="#" class="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gray-100 text-gray-700 transition">
+                <span>🛒</span><span class="font-medium">Purchases</span>
+            </a>
+            <a href="#" class="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gray-100 text-gray-700 transition">
+                <span>💰</span><span class="font-medium">Sales</span>
+            </a>
+            <a href="#" class="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gray-100 text-gray-700 transition">
+                <span>👥</span><span class="font-medium">User Management</span>
+            </a>
+            <a href="#" class="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gray-100 text-gray-700 transition">
+                <span>📈</span><span class="font-medium">Reports</span>
+            </a>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <div id="mainContent" class="transition-all duration-300">
+        <!-- Top Navigation -->
+        <nav class="bg-white shadow-sm sticky top-0 z-30">
+            <div class="px-4 lg:px-8 py-4 flex items-center justify-between">
+                <button id="menuToggle" class="gradient-bg text-white p-2 rounded-xl hover:opacity-90 transition">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                     </svg>
-                </div>
-                <div>
-                    <h1 class="text-xl font-bold">Café POS</h1>
-                    <p class="text-xs text-gray-300">Admin Panel</p>
-                </div>
-            </div>
-            
-            <!-- Navigation -->
-            <nav class="flex-1">
-                <a href="#" class="nav-item active flex items-center gap-3 px-4 py-3 rounded-lg mb-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-                    </svg>
-                    <span>Dashboard</span>
-                </a>
+                </button>
                 
-                <a href="#" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg mb-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-                    </svg>
-                    <span>Products</span>
-                </a>
-                
-                <a href="#" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg mb-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
-                    </svg>
-                    <span>Categories</span>
-                </a>
-                
-                <a href="#" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg mb-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                    </svg>
-                    <span>Inventory</span>
-                </a>
-                
-                <a href="#" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg mb-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
-                    </svg>
-                    <span>Purchases</span>
-                </a>
-                
-                <a href="#" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg mb-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    <span>Sales</span>
-                </a>
-                
-                <a href="#" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg mb-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
-                    </svg>
-                    <span>User Management</span>
-                </a>
-                
-                <a href="#" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg mb-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                    </svg>
-                    <span>Reports</span>
-                </a>
-            </nav>
-            
-            <!-- User Profile -->
-            <div class="mt-6 p-4 rounded-lg bg-white bg-opacity-10">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center font-bold">
-                        A
-                    </div>
-                    <div>
-                        <p class="font-semibold">Admin</p>
-                        <p class="text-xs text-gray-300">Administrator</p>
-                    </div>
-                </div>
-            </div>
-        </aside>
-        
-        <!-- Main Content -->
-        <main class="flex-1 overflow-auto">
-            
-            <!-- Top Bar -->
-            <header class="card sticky top-0 z-10 p-6 mb-6 rounded-none flex items-center justify-between">
-                <div>
-                    <h2 class="text-2xl font-bold">Dashboard</h2>
-                    <p class="text-sm opacity-70">Welcome back, Admin</p>
-                </div>
-                
-                <div class="flex items-center gap-4">
+                <div class="flex items-center space-x-4">
                     <!-- Theme Toggle -->
-                    <div class="flex items-center gap-2">
-                        <svg class="w-5 h-5 opacity-70" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/>
+                    <button id="themeToggle" class="p-2 rounded-xl hover:bg-gray-100 transition">
+                        <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
                         </svg>
-                        <div class="toggle-switch" onclick="toggleTheme()">
-                            <div class="toggle-slider"></div>
-                        </div>
-                        <svg class="w-5 h-5 opacity-70" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
-                        </svg>
-                    </div>
+                    </button>
                     
                     <!-- Notifications -->
-                    <button class="relative p-2 rounded-lg hover:bg-black hover:bg-opacity-5">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                    <button class="relative p-2 rounded-xl hover:bg-gray-100 transition">
+                        <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
                         </svg>
                         <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
                     </button>
-                </div>
-            </header>
-            
-            <div class="p-6">
-                
-                <!-- KPI Cards -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
                     
-                    <!-- Total Sales -->
-                    <div class="card stat-card p-6 rounded-2xl">
-                        <div class="flex items-start justify-between mb-4">
-                            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center">
-                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
+                    <!-- User Profile -->
+                    <div class="relative">
+                        <button id="userMenuToggle" class="flex items-center space-x-2 p-2 rounded-xl hover:bg-gray-100 transition">
+                            <div class="w-8 h-8 gradient-bg rounded-full flex items-center justify-center text-white font-semibold">
+                                A
                             </div>
-                            <span class="text-xs font-semibold px-2 py-1 rounded-full bg-green-100 text-green-700">+12.5%</span>
-                        </div>
-                        <h3 class="text-sm font-medium opacity-70 mb-1">Total Sales</h3>
-                        <p class="text-3xl font-bold">₱45,890</p>
-                        <p class="text-xs opacity-60 mt-2">vs last month</p>
-                    </div>
-                    
-                    <!-- Total Orders -->
-                    <div class="card stat-card p-6 rounded-2xl">
-                        <div class="flex items-start justify-between mb-4">
-                            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
-                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
-                                </svg>
-                            </div>
-                            <span class="text-xs font-semibold px-2 py-1 rounded-full bg-blue-100 text-blue-700">+8.2%</span>
-                        </div>
-                        <h3 class="text-sm font-medium opacity-70 mb-1">Total Orders</h3>
-                        <p class="text-3xl font-bold">1,248</p>
-                        <p class="text-xs opacity-60 mt-2">vs last month</p>
-                    </div>
-                    
-                    <!-- Total Products -->
-                    <div class="card stat-card p-6 rounded-2xl">
-                        <div class="flex items-start justify-between mb-4">
-                            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center">
-                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-                                </svg>
-                            </div>
-                        </div>
-                        <h3 class="text-sm font-medium opacity-70 mb-1">Total Products</h3>
-                        <p class="text-3xl font-bold">87</p>
-                        <p class="text-xs opacity-60 mt-2">Active items</p>
-                    </div>
-                    
-                    <!-- Low Stock -->
-                    <div class="card stat-card p-6 rounded-2xl">
-                        <div class="flex items-start justify-between mb-4">
-                            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center">
-                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                                </svg>
-                            </div>
-                            <span class="text-xs font-semibold px-2 py-1 rounded-full bg-orange-100 text-orange-700">Alert</span>
-                        </div>
-                        <h3 class="text-sm font-medium opacity-70 mb-1">Low Stock Items</h3>
-                        <p class="text-3xl font-bold">12</p>
-                        <p class="text-xs opacity-60 mt-2">Need restock</p>
-                    </div>
-                    
-                </div>
-                
-                <!-- Charts Section -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                    
-                    <!-- Daily Sales Chart -->
-                    <div class="card p-6 rounded-2xl">
-                        <h3 class="text-lg font-semibold mb-4">Daily Sales</h3>
-                        <canvas id="salesChart"></canvas>
-                    </div>
-                    
-                    <!-- Best Selling Products -->
-                    <div class="card p-6 rounded-2xl">
-                        <h3 class="text-lg font-semibold mb-4">Best Selling Products</h3>
-                        <canvas id="productsChart"></canvas>
-                    </div>
-                    
-                </div>
-                
-                <!-- Recent Orders Table -->
-                <div class="card p-6 rounded-2xl">
-                    <div class="flex items-center justify-between mb-6">
-                        <h3 class="text-lg font-semibold">Recent Orders</h3>
-                        <button class="text-sm px-4 py-2 rounded-lg bg-gradient-to-r from-amber-400 to-orange-600 text-white font-medium hover:shadow-lg transition-all">
-                            View All
+                            <span class="hidden md:block text-gray-700 font-medium">Admin</span>
                         </button>
-                    </div>
-                    
-                    <div class="overflow-x-auto">
-                        <table class="w-full">
-                            <thead>
-                                <tr class="border-b border-opacity-20">
-                                    <th class="text-left py-3 px-4 font-semibold text-sm opacity-70">Order ID</th>
-                                    <th class="text-left py-3 px-4 font-semibold text-sm opacity-70">Customer</th>
-                                    <th class="text-left py-3 px-4 font-semibold text-sm opacity-70">Items</th>
-                                    <th class="text-left py-3 px-4 font-semibold text-sm opacity-70">Total</th>
-                                    <th class="text-left py-3 px-4 font-semibold text-sm opacity-70">Payment</th>
-                                    <th class="text-left py-3 px-4 font-semibold text-sm opacity-70">Date</th>
-                                    <th class="text-left py-3 px-4 font-semibold text-sm opacity-70">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr class="table-row border-b border-opacity-10">
-                                    <td class="py-4 px-4 font-medium">#ORD-001</td>
-                                    <td class="py-4 px-4">John Doe</td>
-                                    <td class="py-4 px-4">Cappuccino, Croissant</td>
-                                    <td class="py-4 px-4 font-semibold">₱245</td>
-                                    <td class="py-4 px-4">Cash</td>
-                                    <td class="py-4 px-4">Nov 21, 2025</td>
-                                    <td class="py-4 px-4"><span class="badge badge-success">Completed</span></td>
-                                </tr>
-                                <tr class="table-row border-b border-opacity-10">
-                                    <td class="py-4 px-4 font-medium">#ORD-002</td>
-                                    <td class="py-4 px-4">Jane Smith</td>
-                                    <td class="py-4 px-4">Americano, Muffin</td>
-                                    <td class="py-4 px-4 font-semibold">₱185</td>
-                                    <td class="py-4 px-4">GCash</td>
-                                    <td class="py-4 px-4">Nov 21, 2025</td>
-                                    <td class="py-4 px-4"><span class="badge badge-success">Completed</span></td>
-                                </tr>
-                                <tr class="table-row border-b border-opacity-10">
-                                    <td class="py-4 px-4 font-medium">#ORD-003</td>
-                                    <td class="py-4 px-4">Mike Johnson</td>
-                                    <td class="py-4 px-4">Latte, Sandwich</td>
-                                    <td class="py-4 px-4 font-semibold">₱320</td>
-                                    <td class="py-4 px-4">Card</td>
-                                    <td class="py-4 px-4">Nov 21, 2025</td>
-                                    <td class="py-4 px-4"><span class="badge badge-pending">Pending</span></td>
-                                </tr>
-                                <tr class="table-row border-b border-opacity-10">
-                                    <td class="py-4 px-4 font-medium">#ORD-004</td>
-                                    <td class="py-4 px-4">Sarah Wilson</td>
-                                    <td class="py-4 px-4">Espresso, Cake</td>
-                                    <td class="py-4 px-4 font-semibold">₱290</td>
-                                    <td class="py-4 px-4">Cash</td>
-                                    <td class="py-4 px-4">Nov 21, 2025</td>
-                                    <td class="py-4 px-4"><span class="badge badge-success">Completed</span></td>
-                                </tr>
-                                <tr class="table-row">
-                                    <td class="py-4 px-4 font-medium">#ORD-005</td>
-                                    <td class="py-4 px-4">Tom Brown</td>
-                                    <td class="py-4 px-4">Mocha, Cookie</td>
-                                    <td class="py-4 px-4 font-semibold">₱210</td>
-                                    <td class="py-4 px-4">GCash</td>
-                                    <td class="py-4 px-4">Nov 21, 2025</td>
-                                    <td class="py-4 px-4"><span class="badge badge-success">Completed</span></td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        <div id="userMenu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg py-2 border border-gray-200">
+                            <a href="#" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">⚙️ Settings</a>
+                            <a href="#" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">🚪 Logout</a>
+                        </div>
                     </div>
                 </div>
-                
             </div>
+        </nav>
+
+        <!-- Dashboard Content -->
+        <main class="p-4 lg:p-8">
+            <h1 class="text-3xl font-bold text-gray-900 mb-8">Dashboard Overview</h1>
             
-    </main>
-    
-    <script src="../../js/adminDashboard.js"></script>
+            <!-- Analytics Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <!-- Total Sales Card -->
+                <div class="bg-white rounded-2xl shadow p-6 card-hover">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="p-3 gradient-bg rounded-xl">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 text-sm mb-1">Total Sales Today</p>
+                    <h3 class="text-3xl font-bold gradient-text counter" data-target="12450">₱0</h3>
+                    <p class="text-xs text-gray-500 mt-2">All-time: ₱485,320</p>
+                </div>
+
+                <!-- Total Orders -->
+                <div class="bg-white rounded-2xl shadow p-6 card-hover">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="p-3 bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 text-sm mb-1">Total Orders</p>
+                    <h3 class="text-3xl font-bold text-gray-900 counter" data-target="248">0</h3>
+                    <p class="text-xs text-green-500 mt-2">↑ 12% from yesterday</p>
+                </div>
+
+                <!-- Total Products -->
+                <div class="bg-white rounded-2xl shadow p-6 card-hover">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="p-3 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 text-sm mb-1">Total Products</p>
+                    <h3 class="text-3xl font-bold text-gray-900 counter" data-target="156">0</h3>
+                    <p class="text-xs text-gray-500 mt-2">8 categories</p>
+                </div>
+
+                <!-- Low Stock -->
+                <div class="bg-white rounded-2xl shadow p-6 card-hover">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="p-3 bg-gradient-to-r from-red-500 to-pink-500 rounded-xl">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 text-sm mb-1">Low Stock Items</p>
+                    <h3 class="text-3xl font-bold text-gray-900 counter" data-target="12">0</h3>
+                    <p class="text-xs text-red-500 mt-2">Requires attention</p>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <!-- Daily Sales Chart -->
+                <div class="bg-white rounded-xl shadow p-6">
+                    <div class="border-b border-gray-200 pb-4 mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Daily Sales</h3>
+                        <p class="text-sm text-gray-600">Last 7 days performance</p>
+                    </div>
+                    <canvas id="salesChart"></canvas>
+                </div>
+
+                <!-- Best Selling Products -->
+                <div class="bg-white rounded-xl shadow p-6">
+                    <div class="border-b border-gray-200 pb-4 mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Best Selling Products</h3>
+                        <p class="text-sm text-gray-600">Top 5 this week</p>
+                    </div>
+                    <canvas id="productsChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Recent Orders Table -->
+            <div class="bg-white rounded-xl shadow overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900">Recent Orders</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50 sticky top-0">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200" id="ordersTableBody">
+                            <!-- Orders will be inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Order Details Modal -->
+    <div id="orderModal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 items-center justify-center p-4">
+        <div class="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="gradient-bg px-6 py-4 flex items-center justify-between rounded-t-xl">
+                <h3 class="text-xl font-bold text-white">Order Details</h3>
+                <button id="closeModal" class="text-white hover:text-gray-200">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="p-6">
+                <div class="mb-4">
+                    <p class="text-sm text-gray-600">Order ID</p>
+                    <p class="text-lg font-semibold text-gray-900" id="modalOrderId">#ORD-001</p>
+                </div>
+                <div class="mb-4">
+                    <p class="text-sm text-gray-600">Customer</p>
+                    <p class="text-lg font-semibold text-gray-900" id="modalCustomer">John Doe</p>
+                </div>
+                <div class="mb-6">
+                    <h4 class="font-semibold text-gray-900 mb-3">Order Items</h4>
+                    <div class="space-y-3" id="modalItems">
+                        <!-- Items will be inserted here -->
+                    </div>
+                </div>
+                <div class="border-t pt-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-lg font-semibold text-gray-900">Total</span>
+                        <span class="text-2xl font-bold gradient-text" id="modalTotal">₱0.00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample Data
+        const orders = [
+            { id: 'ORD-001', customer: 'Juan Dela Cruz', date: '2024-11-24', total: 485, status: 'Completed', items: [{name: 'Caramel Macchiato', size: 'Grande', addons: 'Extra Shot', qty: 2, price: 175}, {name: 'Blueberry Muffin', size: 'Regular', addons: 'None', qty: 1, price: 135}] },
+            { id: 'ORD-002', customer: 'Maria Santos', date: '2024-11-24', total: 320, status: 'Pending', items: [{name: 'Iced Americano', size: 'Venti', addons: 'None', qty: 1, price: 150}, {name: 'Chocolate Cake', size: 'Slice', addons: 'None', qty: 1, price: 170}] },
+            { id: 'ORD-003', customer: 'Pedro Reyes', date: '2024-11-24', total: 250, status: 'Completed', items: [{name: 'Cappuccino', size: 'Tall', addons: 'Oat Milk', qty: 2, price: 125}] },
+            { id: 'ORD-004', customer: 'Ana Garcia', date: '2024-11-23', total: 540, status: 'Completed', items: [{name: 'Flat White', size: 'Grande', addons: 'None', qty: 3, price: 180}] },
+            { id: 'ORD-005', customer: 'Carlos Mendoza', date: '2024-11-23', total: 395, status: 'Cancelled', items: [{name: 'Espresso', size: 'Double', addons: 'None', qty: 2, price: 95}, {name: 'Croissant', size: 'Regular', addons: 'Butter', qty: 2, price: 100}] }
+        ];
+
+        // Sidebar Toggle
+        const menuToggle = document.getElementById('menuToggle');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const mainContent = document.getElementById('mainContent');
+
+        menuToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+            sidebarOverlay.classList.toggle('hidden');
+        });
+
+        sidebarOverlay.addEventListener('click', () => {
+            sidebar.classList.remove('open');
+            sidebarOverlay.classList.add('hidden');
+        });
+
+        // Theme Toggle
+        const themeToggle = document.getElementById('themeToggle');
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark');
+        });
+
+        // User Menu Toggle
+        const userMenuToggle = document.getElementById('userMenuToggle');
+        const userMenu = document.getElementById('userMenu');
+        userMenuToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            userMenu.classList.toggle('hidden');
+        });
+        document.addEventListener('click', () => userMenu.classList.add('hidden'));
+
+        // Counter Animation
+        const counters = document.querySelectorAll('.counter');
+        counters.forEach(counter => {
+            const target = parseInt(counter.getAttribute('data-target'));
+            const increment = target / 50;
+            let count = 0;
+            const updateCounter = () => {
+                if (count < target) {
+                    count += increment;
+                    counter.textContent = counter.textContent.includes('₱') ? `₱${Math.ceil(count).toLocaleString()}` : Math.ceil(count);
+                    setTimeout(updateCounter, 20);
+                } else {
+                    counter.textContent = counter.textContent.includes('₱') ? `₱${target.toLocaleString()}` : target;
+                }
+            };
+            updateCounter();
+        });
+
+        // Charts
+        const salesCtx = document.getElementById('salesChart').getContext('2d');
+        new Chart(salesCtx, {
+            type: 'line',
+            data: {
+                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                datasets: [{
+                    label: 'Sales',
+                    data: [12000, 15000, 13500, 17000, 16500, 19000, 12450],
+                    borderColor: '#6A0DAD',
+                    backgroundColor: 'rgba(106, 13, 173, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+
+        const productsCtx = document.getElementById('productsChart').getContext('2d');
+        new Chart(productsCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Caramel Macchiato', 'Iced Americano', 'Cappuccino', 'Flat White', 'Espresso'],
+                datasets: [{
+                    label: 'Units Sold',
+                    data: [145, 132, 118, 105, 98],
+                    backgroundColor: ['#6A0DAD', '#7B1FA2', '#8E24AA', '#9C27B0', '#A020F0']
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        // Populate Orders Table
+        const tbody = document.getElementById('ordersTableBody');
+        orders.forEach(order => {
+            const statusColors = {
+                'Completed': 'bg-green-100 text-green-800',
+                'Pending': 'bg-yellow-100 text-yellow-800',
+                'Cancelled': 'bg-red-100 text-red-800'
+            };
+            const row = `
+                <tr class="hover:bg-gray-50 transition">
+                    <td class="px-6 py-4 text-sm font-medium text-gray-900">${order.id}</td>
+                    <td class="px-6 py-4 text-sm text-gray-600">${order.customer}</td>
+                    <td class="px-6 py-4 text-sm text-gray-600">${order.date}</td>
+                    <td class="px-6 py-4 text-sm font-semibold text-gray-900">₱${order.total}</td>
+                    <td class="px-6 py-4">
+                        <span class="px-3 py-1 rounded-full text-xs font-medium ${statusColors[order.status]}">${order.status}</span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <button onclick="openOrderModal('${order.id}')" class="gradient-bg text-white px-4 py-2 rounded-lg text-sm hover:opacity-90 transition">View</button>
+                    </td>
+                </tr>
+            `;
+            tbody.innerHTML += row;
+        });
+
+        // Order Modal
+        const orderModal = document.getElementById('orderModal');
+        const closeModal = document.getElementById('closeModal');
+
+        function openOrderModal(orderId) {
+            const order = orders.find(o => o.id === orderId);
+            document.getElementById('modalOrderId').textContent = order.id;
+            document.getElementById('modalCustomer').textContent = order.customer;
+            document.getElementById('modalTotal').textContent = `₱${order.total}`;
+            
+            const itemsContainer = document.getElementById('modalItems');
+            itemsContainer.innerHTML = '';
+            order.items.forEach(item => {
+                itemsContainer.innerHTML += `
+                    <div class="flex justify-between items-start p-3 bg-gray-50 rounded-lg">
+                        <div>
+                            <p class="font-medium text-gray-900">${item.name}</p>
+                            <p class="text-sm text-gray-600">Size: ${item.size} | Add-ons: ${item.addons}</p>
+                            <p class="text-sm text-gray-600">Qty: ${item.qty}</p>
+                        </div>
+                        <p class="font-semibold text-gray-900">₱${item.price}</p>
+                    </div>
+                `;
+            });
+            
+            orderModal.classList.add('show');
+        }
+
+        closeModal.addEventListener('click', () => orderModal.classList.remove('show'));
+        orderModal.addEventListener('click', (e) => {
+            if (e.target === orderModal) orderModal.classList.remove('show');
+        });
+    </script>
+</body>
+</html>
